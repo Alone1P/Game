@@ -24,16 +24,45 @@
             </div>
         </div>
 
-        <!-- الشاشة الرئيسية -->
-        <div id="main-menu" class="screen">
-            <div class="menu-content">
+        <!-- شاشة تسجيل الدخول -->
+        <div id="login-screen" class="screen">
+            <div class="login-content">
                 <h1 class="game-title">Shadow City</h1>
                 <p class="game-subtitle">Simulator of Streets</p>
-                <div class="menu-buttons">
-                    <button class="menu-btn" onclick="startNewGame()">لعبة جديدة</button>
-                    <button class="menu-btn" onclick="loadGame()" id="load-btn" disabled>تحميل اللعبة</button>
-                    <button class="menu-btn" onclick="showSettings()">الإعدادات</button>
-                    <button class="menu-btn" onclick="showCredits()">حول اللعبة</button>
+                <div class="login-form">
+                    <div class="form-group">
+                        <label for="username">اسم المستخدم:</label>
+                        <input type="text" id="username" placeholder="أدخل اسم المستخدم" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">كلمة المرور:</label>
+                        <input type="password" id="password" placeholder="أدخل كلمة المرور">
+                    </div>
+                    <button class="login-btn" id="login-btn">تسجيل الدخول</button>
+                    <button class="register-btn" id="register-btn">إنشاء حساب جديد</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة إنشاء حساب -->
+        <div id="register-screen" class="screen">
+            <div class="register-content">
+                <h2>إنشاء حساب جديد</h2>
+                <div class="register-form">
+                    <div class="form-group">
+                        <label for="new-username">اسم المستخدم:</label>
+                        <input type="text" id="new-username" placeholder="اختر اسم مستخدم" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">كلمة المرور:</label>
+                        <input type="password" id="new-password" placeholder="اختر كلمة مرور">
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm-password">تأكيد كلمة المرور:</label>
+                        <input type="password" id="confirm-password" placeholder="أعد كتابة كلمة المرور">
+                    </div>
+                    <button class="register-btn" id="register-submit-btn">إنشاء الحساب</button>
+                    <button class="back-btn" id="back-to-login-btn">العودة لتسجيل الدخول</button>
                 </div>
             </div>
         </div>
@@ -45,7 +74,7 @@
                 <div class="character-form">
                     <div class="form-group">
                         <label for="player-name">اسم الشخصية:</label>
-                        <input type="text" id="player-name" placeholder="أدخل اسمك" maxlength="20">
+                        <input type="text" id="player-name" placeholder="أدخل اسم الشخصية" maxlength="20">
                     </div>
                     <div class="form-group">
                         <label>اختر خلفيتك:</label>
@@ -64,7 +93,26 @@
                             </div>
                         </div>
                     </div>
-                    <button class="create-btn" onclick="createCharacter()" disabled>ابدأ المغامرة</button>
+                    <button class="create-btn" id="create-character-btn" disabled>ابدأ المغامرة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- القائمة الرئيسية -->
+        <div id="main-menu" class="screen">
+            <div class="menu-content">
+                <h1 class="game-title">Shadow City</h1>
+                <p class="game-subtitle">Simulator of Streets</p>
+                <div class="player-info">
+                    <p>مرحباً، <span id="current-player-name">اللاعب</span></p>
+                    <p>المستوى: <span id="menu-level">1</span> | المال: <span id="menu-money">0</span></p>
+                </div>
+                <div class="menu-buttons">
+                    <button class="menu-btn" id="start-game-btn">بدء اللعبة</button>
+                    <button class="menu-btn" id="change-character-btn">تغيير الشخصية</button>
+                    <button class="menu-btn" id="settings-btn">الإعدادات</button>
+                    <button class="menu-btn" id="about-btn">حول اللعبة</button>
+                    <button class="menu-btn logout-btn" id="logout-btn">تسجيل الخروج</button>
                 </div>
             </div>
         </div>
@@ -130,9 +178,9 @@
                     <span class="nav-icon">📊</span>
                     <span class="nav-label">الإحصائيات</span>
                 </button>
-                <button class="nav-btn" onclick="showSettings()">
-                    <span class="nav-icon">⚙️</span>
-                    <span class="nav-label">الإعدادات</span>
+                <button class="nav-btn" onclick="returnToMenu()">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-label">القائمة الرئيسية</span>
                 </button>
             </div>
         </div>

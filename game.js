@@ -1,6 +1,86 @@
 // Shadow City: Simulator of Streets
 // Game Logic and State Management
 
+class UserManager {
+    constructor() {
+        this.currentUser = null;
+        this.users = JSON.parse(localStorage.getItem('shadowCityUsers')) || {};
+    }
+    
+    register(username, password) {
+        if (this.users[username]) {
+            return { success: false, message: 'اسم المستخدم موجود بالفعل' };
+        }
+        
+        if (username.length < 3) {
+            return { success: false, message: 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل' };
+        }
+        
+        if (password.length < 4) {
+            return { success: false, message: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' };
+        }
+        
+        this.users[username] = {
+            password: password,
+            createdAt: new Date().toISOString(),
+            gameData: null
+        };
+        
+        this.saveUsers();
+        return { success: true, message: 'تم إنشاء الحساب بنجاح' };
+    }
+    
+    login(username, password) {
+        if (!this.users[username]) {
+            return { success: false, message: 'اسم المستخدم غير موجود' };
+        }
+        
+        if (this.users[username].password !== password) {
+            return { success: false, message: 'كلمة المرور غير صحيحة' };
+        }
+        
+        this.currentUser = username;
+        localStorage.setItem('shadowCityCurrentUser', username);
+        return { success: true, message: 'تم تسجيل الدخول بنجاح' };
+    }
+    
+    logout() {
+        this.currentUser = null;
+        localStorage.removeItem('shadowCityCurrentUser');
+    }
+    
+    getCurrentUser() {
+        return this.currentUser;
+    }
+    
+    saveGameData(gameData) {
+        if (this.currentUser) {
+            this.users[this.currentUser].gameData = gameData;
+            this.saveUsers();
+        }
+    }
+    
+    loadGameData() {
+        if (this.currentUser && this.users[this.currentUser].gameData) {
+            return this.users[this.currentUser].gameData;
+        }
+        return null;
+    }
+    
+    saveUsers() {
+        localStorage.setItem('shadowCityUsers', JSON.stringify(this.users));
+    }
+    
+    autoLogin() {
+        const savedUser = localStorage.getItem('shadowCityCurrentUser');
+        if (savedUser && this.users[savedUser]) {
+            this.currentUser = savedUser;
+            return true;
+        }
+        return false;
+    }
+}
+
 class GameState {
     constructor() {
         this.player = {
@@ -1552,5 +1632,404 @@ function unequipItem(itemId) {
         // إعادة فتح المخزون
         setTimeout(() => showInventory(), 1000);
     }
+}
+
+
+// إدارة المستخدمين والشاشات
+let userManager = new UserManager();
+let gameState = new GameState();
+
+// وظائف تسجيل الدخول والتسجيل
+function login() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    
+    if (!username || !password) {
+        showNotification('يرجى ملء جميع الحقول');
+        return;
+    }
+    
+    const result = userManager.login(username, password);
+    showNotification(result.message);
+    
+    if (result.success) {
+        // تحميل بيانات اللعبة إذا كانت موجودة
+        const savedGameData = userManager.loadGameData();
+        if (savedGameData) {
+            gameState.load(savedGameData);
+            showMainMenu();
+        } else {
+            showCharacterCreation();
+        }
+    }
+}
+
+function register() {
+    const username = document.getElementById('new-username').value.trim();
+    const password = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+    
+    if (!username || !password || !confirmPassword) {
+        showNotification('يرجى ملء جميع الحقول');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showNotification('كلمات المرور غير متطابقة');
+        return;
+    }
+    
+    const result = userManager.register(username, password);
+    showNotification(result.message);
+    
+    if (result.success) {
+        // تسجيل دخول تلقائي بعد التسجيل
+        userManager.login(username, password);
+        showCharacterCreation();
+    }
+}
+
+function logout() {
+    userManager.logout();
+    gameState = new GameState(); // إعادة تعيين حالة اللعبة
+    showLogin();
+}
+
+function showLogin() {
+    hideAllScreens();
+    document.getElementById('login-screen').classList.add('active');
+    
+    // مسح الحقول
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+}
+
+function showRegister() {
+    hideAllScreens();
+    document.getElementById('register-screen').classList.add('active');
+    
+    // مسح الحقول
+    document.getElementById('new-username').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+}
+
+function showCharacterCreation() {
+    hideAllScreens();
+    document.getElementById('character-creation').classList.add('active');
+    
+    // مسح الحقول
+    document.getElementById('player-name').value = '';
+    
+    // إعادة تعيين اختيار الخلفية
+    document.querySelectorAll('.background-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    document.querySelector('.create-btn').disabled = true;
+}
+
+function showMainMenu() {
+    hideAllScreens();
+    document.getElementById('main-menu').classList.add('active');
+    
+    // تحديث معلومات اللاعب في القائمة
+    const currentUser = userManager.getCurrentUser();
+    if (currentUser) {
+        document.getElementById('current-player-name').textContent = gameState.player.name || currentUser;
+        document.getElementById('menu-level').textContent = gameState.player.level;
+        document.getElementById('menu-money').textContent = gameState.player.money;
+    }
+}
+
+function startGame() {
+    hideAllScreens();
+    document.getElementById('game-screen').classList.add('active');
+    updateUI();
+}
+
+function returnToMenu() {
+    // حفظ اللعبة قبل العودة للقائمة
+    gameState.save();
+    userManager.saveGameData(gameState.getState());
+    showMainMenu();
+}
+
+function hideAllScreens() {
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+}
+
+// تحسين وظيفة showCredits مع إغلاق تلقائي
+function showCredits() {
+    const creditsHTML = `
+        <div class="credits-content">
+            <h2>حول اللعبة</h2>
+            <div class="credits-info">
+                <h3>Shadow City: Simulator of Streets</h3>
+                <p><strong>الإصدار:</strong> 1.0</p>
+                <p><strong>المطور:</strong> Manus AI</p>
+                <p><strong>النوع:</strong> محاكي حياة / RPG</p>
+                <br>
+                <h4>الوصف:</h4>
+                <p>ابدأ رحلتك من الصفر في مدينة Shadow City الغامضة. اعمل، اكسب المال، طور مهاراتك، وارتقِ في سلم المجتمع حتى تصل إلى قمة المدينة.</p>
+                <br>
+                <h4>الميزات:</h4>
+                <ul>
+                    <li>أكثر من 15 وظيفة مختلفة</li>
+                    <li>نظام مهارات متقدم</li>
+                    <li>4 مناطق قابلة للاستكشاف</li>
+                    <li>نظام اقتصادي متطور</li>
+                    <li>أحداث عشوائية مثيرة</li>
+                </ul>
+                <br>
+                <p class="auto-close-notice">ستُغلق هذه النافذة تلقائياً خلال <span id="countdown">3</span> ثوانٍ...</p>
+            </div>
+        </div>
+    `;
+    
+    showModal('حول اللعبة', creditsHTML);
+    
+    // العد التنازلي والإغلاق التلقائي
+    let countdown = 3;
+    const countdownElement = document.getElementById('countdown');
+    
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdownElement) {
+            countdownElement.textContent = countdown;
+        }
+        
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            hideModal();
+        }
+    }, 1000);
+}
+
+// تحسين وظيفة بدء اللعبة الجديدة
+function startNewGame() {
+    showCharacterCreation();
+}
+
+// تحديث وظيفة إنشاء الشخصية
+function createCharacter() {
+    const playerName = document.getElementById('player-name').value.trim();
+    const selectedBackground = document.querySelector('.background-option.selected');
+    
+    if (!playerName) {
+        showNotification('يرجى إدخال اسم الشخصية');
+        return;
+    }
+    
+    if (!selectedBackground) {
+        showNotification('يرجى اختيار خلفية للشخصية');
+        return;
+    }
+    
+    const backgroundType = selectedBackground.dataset.background;
+    
+    // إنشاء الشخصية
+    gameState.createCharacter(playerName, backgroundType);
+    
+    // حفظ البيانات
+    gameState.save();
+    userManager.saveGameData(gameState.getState());
+    
+    showNotification(`مرحباً ${playerName}! تم إنشاء شخصيتك بنجاح.`);
+    
+    // الانتقال للقائمة الرئيسية
+    setTimeout(() => {
+        showMainMenu();
+    }, 2000);
+}
+
+// تحديث وظيفة التحميل الأولي
+function initGame() {
+    // محاولة تسجيل دخول تلقائي
+    if (userManager.autoLogin()) {
+        const savedGameData = userManager.loadGameData();
+        if (savedGameData) {
+            gameState.load(savedGameData);
+            
+            // التحقق من وجود شخصية
+            if (gameState.player.name) {
+                showMainMenu();
+            } else {
+                showCharacterCreation();
+            }
+        } else {
+            showCharacterCreation();
+        }
+    } else {
+        showLogin();
+    }
+}
+
+// تحديث وظيفة بدء التطبيق
+document.addEventListener('DOMContentLoaded', function() {
+    // شاشة التحميل
+    setTimeout(() => {
+        document.getElementById('loading-screen').classList.remove('active');
+        initGame();
+    }, 2000);
+    
+    // إعداد أحداث اختيار الخلفية
+    document.querySelectorAll('.background-option').forEach(option => {
+        option.addEventListener('click', function() {
+            document.querySelectorAll('.background-option').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            document.querySelector('.create-btn').disabled = false;
+        });
+    });
+    
+    // تحديث شريط التحميل
+    let progress = 0;
+    const progressBar = document.getElementById('loading-progress');
+    const loadingText = document.getElementById('loading-text');
+    
+    const loadingInterval = setInterval(() => {
+        progress += Math.random() * 30;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = progress + '%';
+        
+        if (progress < 30) {
+            loadingText.textContent = 'تحميل الأصول...';
+        } else if (progress < 60) {
+            loadingText.textContent = 'إعداد اللعبة...';
+        } else if (progress < 90) {
+            loadingText.textContent = 'تحضير الواجهة...';
+        } else {
+            loadingText.textContent = 'اكتمل التحميل!';
+            clearInterval(loadingInterval);
+        }
+    }, 200);
+});
+
+
+// ربط الأحداث للأزرار
+function setupEventListeners() {
+    // أزرار تسجيل الدخول
+    document.getElementById('login-btn').addEventListener('click', login);
+    document.getElementById('register-btn').addEventListener('click', showRegister);
+    
+    // أزرار التسجيل
+    document.getElementById('register-submit-btn').addEventListener('click', register);
+    document.getElementById('back-to-login-btn').addEventListener('click', showLogin);
+    
+    // زر إنشاء الشخصية
+    document.getElementById('create-character-btn').addEventListener('click', createCharacter);
+    
+    // أزرار القائمة الرئيسية
+    document.getElementById('start-game-btn').addEventListener('click', startGame);
+    document.getElementById('change-character-btn').addEventListener('click', showCharacterCreation);
+    document.getElementById('settings-btn').addEventListener('click', showSettings);
+    document.getElementById('about-btn').addEventListener('click', showAbout);
+    document.getElementById('logout-btn').addEventListener('click', logout);
+    
+    // إعداد أحداث اختيار الخلفية
+    document.querySelectorAll('.background-option').forEach(option => {
+        option.addEventListener('click', function() {
+            document.querySelectorAll('.background-option').forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            document.getElementById('create-character-btn').disabled = false;
+        });
+    });
+}
+
+// تحديث وظيفة بدء التطبيق
+document.addEventListener('DOMContentLoaded', function() {
+    // إعداد ربط الأحداث
+    setupEventListeners();
+    
+    // شاشة التحميل
+    setTimeout(() => {
+        document.getElementById('loading-screen').classList.remove('active');
+        initGame();
+    }, 2000);
+    
+    // تحديث شريط التحميل
+    let progress = 0;
+    const progressBar = document.getElementById('loading-progress');
+    const loadingText = document.getElementById('loading-text');
+    
+    const loadingInterval = setInterval(() => {
+        progress += Math.random() * 30;
+        if (progress > 100) progress = 100;
+        
+        progressBar.style.width = progress + '%';
+        
+        if (progress < 30) {
+            loadingText.textContent = 'تحميل الأصول...';
+        } else if (progress < 60) {
+            loadingText.textContent = 'إعداد اللعبة...';
+        } else if (progress < 90) {
+            loadingText.textContent = 'تحضير الواجهة...';
+        } else {
+            loadingText.textContent = 'اكتمل التحميل!';
+            clearInterval(loadingInterval);
+        }
+    }, 200);
+});
+
+// إصلاح وظيفة showAbout مع العد التنازلي
+function showAbout() {
+    const aboutHTML = `
+        <div class="credits-content">
+            <div class="credits-info">
+                <h3>🎮 Shadow City: Simulator of Streets</h3>
+                <p><strong>الإصدار:</strong> 1.0</p>
+                <p><strong>المطور:</strong> Manus AI</p>
+                <p><strong>النوع:</strong> محاكي حياة نصي</p>
+                
+                <h4>📋 الميزات:</h4>
+                <ul>
+                    <li>نظام وظائف متطور مع أكثر من 15 وظيفة</li>
+                    <li>4 مناطق مختلفة للاستكشاف</li>
+                    <li>نظام مهارات قابل للترقية</li>
+                    <li>متاجر متنوعة للتسوق</li>
+                    <li>أحداث عشوائية ومخاطر</li>
+                    <li>دورة الليل والنهار</li>
+                    <li>نظام حفظ تلقائي</li>
+                </ul>
+                
+                <h4>🎯 الهدف:</h4>
+                <p>ابدأ من الصفر واعمل طريقك للسيطرة على مدينة Shadow City من خلال العمل، كسب المال، تطوير المهارات، وبناء سمعتك.</p>
+                
+                <h4>🎮 كيفية اللعب:</h4>
+                <ul>
+                    <li>ابحث عن وظائف في المناطق المختلفة</li>
+                    <li>اكسب المال والخبرة</li>
+                    <li>طور مهاراتك لتحسين أدائك</li>
+                    <li>اشتر العناصر من المتاجر</li>
+                    <li>افتح مناطق جديدة بتحسين سمعتك</li>
+                </ul>
+                
+                <div class="auto-close-notice">
+                    <p>ستُغلق هذه النافذة تلقائياً خلال <span id="countdown">3</span> ثوانٍ</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    showModal('حول اللعبة', aboutHTML);
+    
+    // العد التنازلي لإغلاق النافذة
+    let countdown = 3;
+    const countdownElement = document.getElementById('countdown');
+    
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        if (countdownElement) {
+            countdownElement.textContent = countdown;
+        }
+        
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            hideModal();
+        }
+    }, 1000);
 }
 
