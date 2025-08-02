@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow City: Simulator of Streets</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+    <div id="game-container">
+        <!-- شاشة التحميل -->
+        <div id="loading-screen" class="screen active">
+            <div class="loading-content">
+                <h1 class="game-title">Shadow City</h1>
+                <p class="game-subtitle">Simulator of Streets</p>
+                <div class="loading-bar">
+                    <div class="loading-progress" id="loading-progress"></div>
+                </div>
+                <p class="loading-text" id="loading-text">جاري التحميل...</p>
+            </div>
+        </div>
+
+        <!-- الشاشة الرئيسية -->
+        <div id="main-menu" class="screen">
+            <div class="menu-content">
+                <h1 class="game-title">Shadow City</h1>
+                <p class="game-subtitle">Simulator of Streets</p>
+                <div class="menu-buttons">
+                    <button class="menu-btn" onclick="startNewGame()">لعبة جديدة</button>
+                    <button class="menu-btn" onclick="loadGame()" id="load-btn" disabled>تحميل اللعبة</button>
+                    <button class="menu-btn" onclick="showSettings()">الإعدادات</button>
+                    <button class="menu-btn" onclick="showCredits()">حول اللعبة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة إنشاء الشخصية -->
+        <div id="character-creation" class="screen">
+            <div class="creation-content">
+                <h2>إنشاء شخصيتك</h2>
+                <div class="character-form">
+                    <div class="form-group">
+                        <label for="player-name">اسم الشخصية:</label>
+                        <input type="text" id="player-name" placeholder="أدخل اسمك" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label>اختر خلفيتك:</label>
+                        <div class="background-options">
+                            <div class="background-option" data-background="student">
+                                <h4>طالب جامعي</h4>
+                                <p>المال: 500 | المهارة: التعلم السريع</p>
+                            </div>
+                            <div class="background-option" data-background="worker">
+                                <h4>عامل بسيط</h4>
+                                <p>المال: 300 | المهارة: القوة البدنية</p>
+                            </div>
+                            <div class="background-option" data-background="street">
+                                <h4>شاب الشارع</h4>
+                                <p>المال: 200 | المهارة: الذكاء الاجتماعي</p>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="create-btn" onclick="createCharacter()" disabled>ابدأ المغامرة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- الشاشة الرئيسية للعبة -->
+        <div id="game-screen" class="screen">
+            <!-- شريط الحالة العلوي -->
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-label">المال:</span>
+                    <span class="status-value" id="money">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">الخبرة:</span>
+                    <span class="status-value" id="xp">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">السمعة:</span>
+                    <span class="status-value" id="reputation">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">المستوى:</span>
+                    <span class="status-value" id="level">1</span>
+                </div>
+            </div>
+
+            <!-- منطقة المحتوى الرئيسي -->
+            <div class="game-content">
+                <div class="location-info">
+                    <h3 id="current-location">الحي الشعبي</h3>
+                    <p id="location-description">حي بسيط في أطراف المدينة، مليء بالفرص للمبتدئين.</p>
+                    <div class="time-weather">
+                        <span id="game-time">الصباح</span> | 
+                        <span id="game-weather">مشمس</span>
+                    </div>
+                </div>
+
+                <!-- منطقة الأحداث والرسائل -->
+                <div class="event-area">
+                    <div id="event-text">مرحباً بك في Shadow City! ابدأ رحلتك نحو السيطرة على المدينة.</div>
+                </div>
+
+                <!-- خيارات الأفعال -->
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="showJobs()">البحث عن عمل</button>
+                    <button class="action-btn" onclick="showShops()">المتاجر</button>
+                    <button class="action-btn" onclick="showSkills()">المهارات</button>
+                    <button class="action-btn" onclick="showInventory()">الحقيبة</button>
+                </div>
+            </div>
+
+            <!-- القائمة السفلية -->
+            <div class="bottom-nav">
+                <button class="nav-btn" onclick="showMap()">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">الخريطة</span>
+                </button>
+                <button class="nav-btn" onclick="showQuests()">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-label">المهمات</span>
+                </button>
+                <button class="nav-btn" onclick="showStats()">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">الإحصائيات</span>
+                </button>
+                <button class="nav-btn" onclick="showSettings()">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">الإعدادات</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- نوافذ منبثقة -->
+        <div id="modal-overlay" class="modal-overlay">
+            <div class="modal-content" id="modal-content">
+                <!-- سيتم ملء المحتوى ديناميكياً -->
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
+
