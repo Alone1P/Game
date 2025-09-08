@@ -24,6 +24,38 @@
             </div>
         </div>
 
+        <!-- شاشة اختيار نوع الجهاز -->
+        <div id="device-selection" class="screen">
+            <div class="device-content">
+                <h1 class="game-title">Shadow City</h1>
+                <p class="game-subtitle">Simulator of Streets</p>
+                <h2>اختر نوع جهازك لأفضل تجربة</h2>
+                <div class="device-options">
+                    <div class="device-option" data-device="mobile">
+                        <div class="device-icon">📱</div>
+                        <h4>هاتف ذكي</h4>
+                        <p>واجهة محسّنة للهواتف الذكية</p>
+                    </div>
+                    <div class="device-option" data-device="tablet">
+                        <div class="device-icon">📱</div>
+                        <h4>جهاز لوحي</h4>
+                        <p>واجهة محسّنة للأجهزة اللوحية</p>
+                    </div>
+                    <div class="device-option" data-device="desktop">
+                        <div class="device-icon">💻</div>
+                        <h4>كمبيوتر</h4>
+                        <p>واجهة محسّنة لأجهزة الكمبيوتر</p>
+                    </div>
+                    <div class="device-option" data-device="auto">
+                        <div class="device-icon">🔄</div>
+                        <h4>تلقائي</h4>
+                        <p>اختيار تلقائي حسب الجهاز</p>
+                    </div>
+                </div>
+                <button class="continue-btn" id="continue-device-btn" disabled>متابعة</button>
+            </div>
+        </div>
+
         <!-- شاشة تسجيل الدخول -->
         <div id="login-screen" class="screen">
             <div class="login-content">
@@ -39,6 +71,18 @@
                         <input type="password" id="password" placeholder="أدخل كلمة المرور">
                     </div>
                     <button class="login-btn" id="login-btn">تسجيل الدخول</button>
+                    
+                    <!-- خيارات تسجيل الدخول الاجتماعي -->
+                    <div class="social-login">
+                        <div class="divider">
+                            <span>أو</span>
+                        </div>
+                        <button class="google-login-btn" id="google-login-btn">
+                            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-icon">
+                            تسجيل الدخول بحساب Google
+                        </button>
+                    </div>
+                    
                     <button class="register-btn" id="register-btn">إنشاء حساب جديد</button>
                 </div>
             </div>
@@ -52,6 +96,10 @@
                     <div class="form-group">
                         <label for="new-username">اسم المستخدم:</label>
                         <input type="text" id="new-username" placeholder="اختر اسم مستخدم" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-email">البريد الإلكتروني:</label>
+                        <input type="email" id="new-email" placeholder="أدخل بريدك الإلكتروني">
                     </div>
                     <div class="form-group">
                         <label for="new-password">كلمة المرور:</label>
@@ -193,6 +241,12 @@
         </div>
     </div>
 
+    <!-- Google Sign-In API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- EmailJS for sending welcome emails -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    
     <script src="game.js"></script>
 </body>
 </html>

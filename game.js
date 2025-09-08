@@ -7,7 +7,7 @@ class UserManager {
         this.users = JSON.parse(localStorage.getItem('shadowCityUsers')) || {};
     }
     
-    register(username, password) {
+    register(username, password, email = null) {
         if (this.users[username]) {
             return { success: false, message: 'اسم المستخدم موجود بالفعل' };
         }
@@ -16,14 +16,16 @@ class UserManager {
             return { success: false, message: 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل' };
         }
         
-        if (password.length < 4) {
+        if (password !== 'google_auth' && password.length < 4) {
             return { success: false, message: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' };
         }
         
         this.users[username] = {
             password: password,
+            email: email,
             createdAt: new Date().toISOString(),
-            gameData: null
+            gameData: null,
+            isGoogleUser: password === 'google_auth'
         };
         
         this.saveUsers();
@@ -571,12 +573,133 @@ class GameState {
 
 // متغيرات عامة
 let gameState = new GameState();
+let userManager = new UserManager();
 let currentScreen = 'loading';
+let deviceType = 'auto'; // auto, mobile, tablet, desktop
+
+// إعدادات Google OAuth
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // يجب استبداله بمعرف العميل الحقيقي
+
+// إعدادات EmailJS
+const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID'; // يجب استبداله بمعرف الخدمة
+const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID'; // يجب استبداله بمعرف القالب
+const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY'; // يجب استبداله بالمفتاح العام
+
+// تهيئة EmailJS
+if (typeof emailjs !== 'undefined') {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+}
 
 // بدء اللعبة
 window.addEventListener('load', function() {
     initGame();
+    initGoogleSignIn();
 });
+
+// تهيئة Google Sign-In
+function initGoogleSignIn() {
+    if (typeof google !== 'undefined' && google.accounts) {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleSignIn,
+            auto_select: false,
+            cancel_on_tap_outside: true
+        });
+    }
+}
+
+// معالج تسجيل الدخول بـ Google
+function handleGoogleSignIn(response) {
+    try {
+        const payload = JSON.parse(atob(response.credential.split('.')[1]));
+        const googleUser = {
+            id: payload.sub,
+            name: payload.name,
+            email: payload.email,
+            picture: payload.picture
+        };
+        
+        // تسجيل المستخدم تلقائياً أو إنشاء حساب جديد
+        const username = `google_${googleUser.id}`;
+        
+        if (!userManager.users[username]) {
+            // إنشاء حساب جديد للمستخدم
+            const result = userManager.register(username, 'google_auth', googleUser.email);
+            if (result.success) {
+                sendWelcomeEmail(googleUser.email, googleUser.name);
+                showNotification(`مرحباً ${googleUser.name}! تم إنشاء حسابك بنجاح`);
+            }
+        }
+        
+        // تسجيل الدخول
+        const loginResult = userManager.login(username, 'google_auth');
+        if (loginResult.success) {
+            const gameData = userManager.loadGameData();
+            if (gameData) {
+                Object.assign(gameState, gameData);
+                showScreen('main-menu');
+                updateMenuPlayerInfo();
+            } else {
+                // إعداد اسم اللاعب من Google
+                gameState.player.name = googleUser.name;
+                showScreen('character-creation');
+                setupCharacterCreation();
+            }
+        }
+        
+    } catch (error) {
+        console.error('خطأ في تسجيل الدخول بـ Google:', error);
+        showNotification('حدث خطأ في تسجيل الدخول بـ Google');
+    }
+}
+
+// إرسال رسالة ترحيب عبر الإيميل
+function sendWelcomeEmail(email, name) {
+    if (typeof emailjs === 'undefined') {
+        console.log('EmailJS غير متوفر');
+        return;
+    }
+    
+    const templateParams = {
+        to_email: email,
+        to_name: name,
+        game_name: 'Shadow City: Simulator of Streets',
+        welcome_message: `مرحباً ${name}! نحن سعداء لانضمامك إلى Shadow City. استعد لرحلة مثيرة في عالم الشوارع والمغامرات!`,
+        game_url: window.location.href,
+        support_email: 'support@shadowcity.game'
+    };
+    
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+        .then(function(response) {
+            console.log('تم إرسال رسالة الترحيب بنجاح:', response.status, response.text);
+        }, function(error) {
+            console.error('فشل في إرسال رسالة الترحيب:', error);
+        });
+}
+
+// إرسال رسالة تأكيد التسجيل
+function sendRegistrationConfirmation(email, username) {
+    if (typeof emailjs === 'undefined') {
+        console.log('EmailJS غير متوفر');
+        return;
+    }
+    
+    const templateParams = {
+        to_email: email,
+        to_name: username,
+        game_name: 'Shadow City: Simulator of Streets',
+        confirmation_message: `تم تأكيد تسجيلك في Shadow City بنجاح! اسم المستخدم الخاص بك هو: ${username}`,
+        login_url: window.location.href,
+        tips: 'نصائح للبدء: اختر خلفيتك بعناية، ابدأ بالوظائف البسيطة، واجمع المال والخبرة تدريجياً.'
+    };
+    
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams)
+        .then(function(response) {
+            console.log('تم إرسال رسالة التأكيد بنجاح:', response.status, response.text);
+        }, function(error) {
+            console.error('فشل في إرسال رسالة التأكيد:', error);
+        });
+}
 
 function initGame() {
     // محاكاة التحميل
@@ -587,8 +710,19 @@ function initGame() {
             progress = 100;
             clearInterval(loadingInterval);
             setTimeout(() => {
-                showScreen('main-menu');
-                checkSavedGame();
+                // التحقق من تسجيل الدخول التلقائي
+                if (userManager.autoLogin()) {
+                    const gameData = userManager.loadGameData();
+                    if (gameData) {
+                        Object.assign(gameState, gameData);
+                        showScreen('main-menu');
+                        updateMenuPlayerInfo();
+                    } else {
+                        showScreen('character-creation');
+                    }
+                } else {
+                    showScreen('device-selection');
+                }
             }, 500);
         }
         
@@ -606,6 +740,191 @@ function checkSavedGame() {
     }
 }
 
+// إعداد اختيار الجهاز
+function setupDeviceSelection() {
+    const deviceOptions = document.querySelectorAll('.device-option');
+    const continueBtn = document.getElementById('continue-device-btn');
+    
+    let selectedDevice = null;
+    
+    deviceOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            deviceOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedDevice = this.dataset.device;
+            continueBtn.disabled = false;
+        });
+    });
+    
+    continueBtn.addEventListener('click', function() {
+        if (selectedDevice) {
+            deviceType = selectedDevice;
+            applyDeviceSettings(deviceType);
+            showScreen('login-screen');
+            setupLogin();
+        }
+    });
+}
+
+// تطبيق إعدادات الجهاز
+function applyDeviceSettings(device) {
+    const gameContainer = document.getElementById('game-container');
+    
+    // إزالة الفئات السابقة
+    gameContainer.classList.remove('device-mobile', 'device-tablet', 'device-desktop');
+    
+    // تطبيق الفئة الجديدة
+    if (device === 'auto') {
+        // تحديد نوع الجهاز تلقائياً
+        const width = window.innerWidth;
+        if (width <= 768) {
+            gameContainer.classList.add('device-mobile');
+            deviceType = 'mobile';
+        } else if (width <= 1024) {
+            gameContainer.classList.add('device-tablet');
+            deviceType = 'tablet';
+        } else {
+            gameContainer.classList.add('device-desktop');
+            deviceType = 'desktop';
+        }
+    } else {
+        gameContainer.classList.add(`device-${device}`);
+    }
+    
+    // حفظ اختيار الجهاز
+    localStorage.setItem('shadowCityDeviceType', deviceType);
+}
+
+// إعداد تسجيل الدخول
+function setupLogin() {
+    const loginBtn = document.getElementById('login-btn');
+    const registerBtn = document.getElementById('register-btn');
+    const backToLoginBtn = document.getElementById('back-to-login-btn');
+    const registerSubmitBtn = document.getElementById('register-submit-btn');
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    
+    // تسجيل الدخول العادي
+    loginBtn.addEventListener('click', function() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        
+        if (!username || !password) {
+            showNotification('يرجى ملء جميع الحقول!');
+            return;
+        }
+        
+        const result = userManager.login(username, password);
+        if (result.success) {
+            const gameData = userManager.loadGameData();
+            if (gameData) {
+                Object.assign(gameState, gameData);
+                showScreen('main-menu');
+                updateMenuPlayerInfo();
+            } else {
+                showScreen('character-creation');
+                setupCharacterCreation();
+            }
+            showNotification(result.message);
+        } else {
+            showNotification(result.message);
+        }
+    });
+    
+    // تسجيل الدخول بـ Google
+    if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', function() {
+            if (typeof google !== 'undefined' && google.accounts) {
+                google.accounts.id.prompt();
+            } else {
+                showNotification('خدمة Google غير متوفرة حالياً');
+            }
+        });
+    }
+    
+    registerBtn.addEventListener('click', function() {
+        showScreen('register-screen');
+    });
+    
+    backToLoginBtn.addEventListener('click', function() {
+        showScreen('login-screen');
+    });
+    
+    registerSubmitBtn.addEventListener('click', function() {
+        const username = document.getElementById('new-username').value.trim();
+        const email = document.getElementById('new-email').value.trim();
+        const password = document.getElementById('new-password').value;
+        const confirmPassword = document.getElementById('confirm-password').value;
+        
+        if (!username || !email || !password || !confirmPassword) {
+            showNotification('يرجى ملء جميع الحقول!');
+            return;
+        }
+        
+        // التحقق من صحة البريد الإلكتروني
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showNotification('يرجى إدخال بريد إلكتروني صحيح!');
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            showNotification('كلمات المرور غير متطابقة!');
+            return;
+        }
+        
+        const result = userManager.register(username, password, email);
+        if (result.success) {
+            sendRegistrationConfirmation(email, username);
+            showNotification(result.message);
+            showScreen('login-screen');
+        } else {
+            showNotification(result.message);
+        }
+    });
+}
+
+// تحديث معلومات اللاعب في القائمة الرئيسية
+function updateMenuPlayerInfo() {
+    const playerNameElement = document.getElementById('current-player-name');
+    const menuLevelElement = document.getElementById('menu-level');
+    const menuMoneyElement = document.getElementById('menu-money');
+    
+    if (playerNameElement) playerNameElement.textContent = gameState.player.name || 'اللاعب';
+    if (menuLevelElement) menuLevelElement.textContent = gameState.player.level;
+    if (menuMoneyElement) menuMoneyElement.textContent = gameState.player.money;
+}
+
+// إعداد القائمة الرئيسية
+function setupMainMenu() {
+    const startGameBtn = document.getElementById('start-game-btn');
+    const changeCharacterBtn = document.getElementById('change-character-btn');
+    const settingsBtn = document.getElementById('settings-btn');
+    const aboutBtn = document.getElementById('about-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    
+    startGameBtn.addEventListener('click', function() {
+        if (gameState.player.name) {
+            showScreen('game-screen');
+            updateUI();
+            updateGameDisplay();
+        } else {
+            showScreen('character-creation');
+            setupCharacterCreation();
+        }
+    });
+    
+    changeCharacterBtn.addEventListener('click', function() {
+        showScreen('character-creation');
+        setupCharacterCreation();
+    });
+    
+    logoutBtn.addEventListener('click', function() {
+        userManager.logout();
+        showScreen('login-screen');
+        setupLogin();
+    });
+}
+
 function showScreen(screenId) {
     // إخفاء جميع الشاشات
     document.querySelectorAll('.screen').forEach(screen => {
@@ -615,6 +934,22 @@ function showScreen(screenId) {
     // إظهار الشاشة المطلوبة
     document.getElementById(screenId).classList.add('active');
     currentScreen = screenId;
+    
+    // إعداد الشاشة حسب النوع
+    switch(screenId) {
+        case 'device-selection':
+            setupDeviceSelection();
+            break;
+        case 'login-screen':
+            setupLogin();
+            break;
+        case 'main-menu':
+            setupMainMenu();
+            break;
+        case 'character-creation':
+            setupCharacterCreation();
+            break;
+    }
 }
 
 function startNewGame() {
@@ -636,14 +971,22 @@ function loadGame() {
 function setupCharacterCreation() {
     const nameInput = document.getElementById('player-name');
     const backgroundOptions = document.querySelectorAll('.background-option');
-    const createBtn = document.querySelector('.create-btn');
+    const createBtn = document.getElementById('create-character-btn');
     
     let selectedBackground = null;
     
-    // معالج اختيار الخلفية
+    // إزالة المستمعين السابقين لتجنب التكرار
     backgroundOptions.forEach(option => {
+        option.replaceWith(option.cloneNode(true));
+    });
+    
+    // إعادة تحديد العناصر بعد الاستنساخ
+    const newBackgroundOptions = document.querySelectorAll('.background-option');
+    
+    // معالج اختيار الخلفية
+    newBackgroundOptions.forEach(option => {
         option.addEventListener('click', function() {
-            backgroundOptions.forEach(opt => opt.classList.remove('selected'));
+            newBackgroundOptions.forEach(opt => opt.classList.remove('selected'));
             this.classList.add('selected');
             selectedBackground = this.dataset.background;
             checkCreateButton();
@@ -652,6 +995,9 @@ function setupCharacterCreation() {
     
     // معالج إدخال الاسم
     nameInput.addEventListener('input', checkCreateButton);
+    
+    // معالج زر الإنشاء
+    createBtn.addEventListener('click', createCharacter);
     
     function checkCreateButton() {
         const name = nameInput.value.trim();
@@ -694,6 +1040,9 @@ function createCharacter() {
             break;
     }
     
+    // حفظ بيانات اللعبة للمستخدم
+    userManager.saveGameData(gameState);
+    
     // بدء اللعبة
     showScreen('game-screen');
     updateUI();
@@ -701,9 +1050,6 @@ function createCharacter() {
     
     // رسالة ترحيب
     showEvent(`مرحباً ${name}! مرحباً بك في Shadow City. رحلتك نحو السيطرة على المدينة تبدأ الآن...`);
-    
-    // حفظ اللعبة
-    gameState.save();
 }
 
 function updateUI() {
