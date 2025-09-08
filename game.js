@@ -907,16 +907,7 @@ function setupLogin() {
         });
     }
     
-    // تسجيل الدخول بـ Google
-    if (googleLoginBtn) {
-        googleLoginBtn.addEventListener('click', function() {
-            if (typeof google !== 'undefined' && google.accounts) {
-                google.accounts.id.prompt();
-            } else {
-                showNotification('خدمة Google غير متوفرة حالياً');
-            }
-        });
-    }
+
     
     if (registerBtn) {
         registerBtn.addEventListener('click', function() {

@@ -1,114 +1,67 @@
-# دليل إعداد APIs للعبة Shadow City
+# دليل إعداد API لـ EmailJS (لإرسال رسائل الترحيب)
 
-## 1. إعداد Google OAuth API
-
-### الخطوات:
-
-1. **انتقل إلى Google Cloud Console:**
-   - اذهب إلى: https://console.cloud.google.com/
-
-2. **إنشاء مشروع جديد أو اختيار مشروع موجود:**
-   - انقر على "Select a project" في الأعلى
-   - انقر على "New Project" لإنشاء مشروع جديد
-   - أدخل اسم المشروع (مثل: "Shadow City Game")
-
-3. **تفعيل Google Sign-In API:**
-   - في القائمة الجانبية، اذهب إلى "APIs & Services" > "Library"
-   - ابحث عن "Google Sign-In API" أو "Google Identity"
-   - انقر على "Enable"
-
-4. **إنشاء OAuth 2.0 Client ID:**
-   - اذهب إلى "APIs & Services" > "Credentials"
-   - انقر على "Create Credentials" > "OAuth 2.0 Client ID"
-   - اختر "Web application"
-   - أضف domain اللعبة في "Authorized JavaScript origins"
-   - مثال: `http://localhost:8000` للتطوير المحلي
-
-5. **نسخ Client ID:**
-   - انسخ الـ Client ID الذي تم إنشاؤه
-   - استبدل `YOUR_GOOGLE_CLIENT_ID` في ملف `game.js` بهذا المعرف
-
-## 2. إعداد EmailJS لإرسال الإيميلات
+EmailJS هي خدمة تسمح لك بإرسال رسائل بريد إلكتروني مباشرة من JavaScript دون الحاجة إلى خادم خلفي.
 
 ### الخطوات:
 
-1. **إنشاء حساب EmailJS:**
-   - اذهب إلى: https://www.emailjs.com/
-   - انقر على "Sign Up" وأنشئ حساب جديد
+1.  **انتقل إلى موقع EmailJS:**
+    [https://www.emailjs.com/](https://www.emailjs.com/)
 
-2. **إضافة خدمة إيميل:**
-   - في لوحة التحكم، انقر على "Email Services"
-   - انقر على "Add New Service"
-   - اختر مزود الإيميل (Gmail, Outlook, إلخ)
-   - اتبع التعليمات لربط حسابك
+2.  **إنشاء حساب وتسجيل الدخول:**
+    -   إذا لم يكن لديك حساب، قم بإنشاء حساب جديد.
+    -   سجل الدخول إلى لوحة التحكم الخاصة بك.
 
-3. **إنشاء Email Template:**
-   - انقر على "Email Templates"
-   - انقر على "Create New Template"
-   - استخدم هذا القالب للترحيب:
+3.  **إضافة خدمة بريد إلكتروني (Email Service):**
+    -   من لوحة التحكم، اذهب إلى "Email Services".
+    -   انقر على "Add New Service".
+    -   اختر خدمة البريد الإلكتروني التي تستخدمها (مثال: Gmail، Outlook، إلخ). اتبع التعليمات لربط حسابك. قد تحتاج إلى تفعيل "Less secure app access" في إعدادات Gmail إذا كنت تستخدمه.
+    -   بعد الربط، ستحصل على "Service ID". **احتفظ به، ستحتاجه في ملف `game.js`.**
 
-```html
-مرحباً {{to_name}}!
+4.  **إنشاء قالب بريد إلكتروني (Email Template):**
+    -   من لوحة التحكم، اذهب إلى "Email Templates".
+    -   انقر على "Create New Template".
+    -   صمم قالب البريد الإلكتروني الترحيبي الخاص بك. يمكنك استخدام متغيرات مثل `{{username}}` و `{{game_name}}` و `{{login_url}}` و `{{tips}}`.
+    -   مثال على محتوى القالب:
 
-{{welcome_message}}
+        ```html
+        مرحباً {{username}}،
 
-تفاصيل حسابك:
-- اسم اللعبة: {{game_name}}
-- رابط اللعبة: {{game_url}}
+        شكراً لتسجيلك في {{game_name}}!
 
-{{tips}}
+        نحن متحمسون جداً لوجودك معنا في شوارع Shadow City.
 
-إذا كان لديك أي استفسار، تواصل معنا على: {{support_email}}
+        للبدء، قم بتسجيل الدخول إلى اللعبة من هنا: {{login_url}}
 
-مع تحيات فريق Shadow City
+        نصائح سريعة للبدء: {{tips}}
+
+        نتمنى لك وقتاً ممتعاً!
+        فريق Shadow City
+        ```
+
+    -   احفظ القالب. ستحصل على "Template ID". **احتفظ به، ستحتاجه في ملف `game.js`.**
+
+5.  **تحديث ملف `game.js`:**
+    -   ابحث عن المتغيرات `EMAILJS_SERVICE_ID` و `EMAILJS_TEMPLATE_ID` في ملف `game.js`.
+    -   استبدل القيم الموجودة بـ `Service ID` و `Template ID` التي حصلت عليها من EmailJS.
+
+```javascript
+// في game.js
+const EMAILJS_SERVICE_ID = "YOUR_EMAILJS_SERVICE_ID";
+const EMAILJS_TEMPLATE_ID = "YOUR_EMAILJS_TEMPLATE_ID";
 ```
 
-4. **الحصول على المفاتيح:**
-   - **Service ID:** من صفحة "Email Services"
-   - **Template ID:** من صفحة "Email Templates"
-   - **Public Key:** من صفحة "Account" > "General"
+## 2. تحديث ملف `index.html`
 
-5. **تحديث الكود:**
-   - استبدل المتغيرات التالية في `game.js`:
-   - `YOUR_EMAILJS_SERVICE_ID`
-   - `YOUR_EMAILJS_TEMPLATE_ID`
-   - `YOUR_EMAILJS_PUBLIC_KEY`
+تأكد من تضمين مكتبة EmailJS في ملف `index.html`:
 
-## 3. إعداد إضافي للإنتاج
+```html
+<!-- في قسم <head> أو قبل إغلاق </body> -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // هذا هو Public Key الخاص بك
+   })();
+</script>
+```
 
-### للنشر على الإنترنت:
-1. قم بتحديث "Authorized JavaScript origins" في Google Console
-2. أضف domain الموقع الحقيقي
-3. تأكد من أن جميع المفاتيح محدثة في الكود
-
-### للأمان:
-- لا تشارك المفاتيح الخاصة علناً
-- استخدم متغيرات البيئة في الإنتاج
-- قم بتقييد استخدام المفاتيح حسب النطاق
-
-## 4. اختبار الإعداد
-
-1. شغل اللعبة محلياً
-2. جرب تسجيل الدخول بـ Google
-3. جرب إنشاء حساب جديد والتحقق من وصول الإيميل
-4. تأكد من عمل جميع الوظائف بشكل صحيح
-
-## ملاحظات مهمة:
-
-- **Google OAuth:** مجاني للاستخدام الأساسي
-- **EmailJS:** يوفر 200 إيميل مجاناً شهرياً
-- **الأمان:** تأكد من تقييد استخدام المفاتيح
-- **الاختبار:** اختبر جميع الوظائف قبل النشر
-
-## استكشاف الأخطاء:
-
-### إذا لم يعمل Google Sign-In:
-- تحقق من صحة Client ID
-- تأكد من إضافة النطاق الصحيح
-- تحقق من وحدة التحكم في المتصفح للأخطاء
-
-### إذا لم تصل الإيميلات:
-- تحقق من صحة المفاتيح
-- تأكد من تفعيل الخدمة في EmailJS
-- تحقق من مجلد الرسائل غير المرغوب فيها
-
+-   ابحث عن `YOUR_EMAILJS_PUBLIC_KEY` في ملف `index.html` واستبدله بـ `Public Key` الخاص بك من EmailJS (يمكنك العثور عليه في لوحة تحكم EmailJS ضمن "Account" > "API Keys").
