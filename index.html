@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shadow City: Simulator of Streets</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="animations.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a1a2e">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,53 +16,105 @@
         <!-- شاشة التحميل -->
         <div id="loading-screen" class="screen active">
             <div class="loading-content">
-                <h1 class="game-title">Shadow City</h1>
-                <p class="game-subtitle">Simulator of Streets</p>
-                <div class="loading-bar">
-                    <div class="loading-progress" id="loading-progress"></div>
+                <div class="city-skyline">
+                    <div class="building building-1"></div>
+                    <div class="building building-2"></div>
+                    <div class="building building-3"></div>
+                    <div class="building building-4"></div>
+                    <div class="building building-5"></div>
                 </div>
-                <p class="loading-text" id="loading-text">جاري التحميل...</p>
-            </div>
-        </div>
+                
+                <div class="loading-logo">
+                    <h1 class="game-title glitch" data-text="Shadow City">Shadow City</h1>
+                    <p class="game-subtitle">Simulator of Streets</p>
+                </div>
+                
+                <div class="loading-progress">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                            <div class="progress-glow"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span id="loading-text">جاري التحميل...</span>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- جسيمات متحركة -->
+                <div class="particles">
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="part        </div>
 
-        <!-- شاشة اختيار نوع الجهاز -->
+        <!-- شاشة اختيار الجهاز -->
         <div id="device-selection" class="screen">
             <div class="device-content">
-                <h1 class="game-title">Shadow City</h1>
+                <div class="animated-background">
+                    <div class="floating-shapes">
+                        <div class="shape shape-1"></div>
+                        <div class="shape shape-2"></div>
+                        <div class="shape shape-3"></div>
+                        <div class="shape shape-4"></div>
+                    </div>
+                </div>
+                
+                <h1 class="game-title pulse">Shadow City</h1>
                 <p class="game-subtitle">Simulator of Streets</p>
-                <h2>اختر نوع جهازك لأفضل تجربة</h2>
+                <h2 class="device-title slide-in">اختر نوع جهازك لأفضل تجربة</h2>
+                
                 <div class="device-options">
-                    <div class="device-option" data-device="mobile">
+                    <div class="device-option bounce-in" data-device="mobile" style="animation-delay: 0.2s">
                         <div class="device-icon">📱</div>
-                        <h4>هاتف ذكي</h4>
+                        <h3>هاتف ذكي</h3>
                         <p>واجهة محسّنة للهواتف الذكية</p>
                     </div>
-                    <div class="device-option" data-device="tablet">
+                    
+                    <div class="device-option bounce-in" data-device="tablet" style="animation-delay: 0.4s">
                         <div class="device-icon">📱</div>
-                        <h4>جهاز لوحي</h4>
+                        <h3>جهاز لوحي</h3>
                         <p>واجهة محسّنة للأجهزة اللوحية</p>
                     </div>
-                    <div class="device-option" data-device="desktop">
+                    
+                    <div class="device-option bounce-in" data-device="desktop" style="animation-delay: 0.6s">
                         <div class="device-icon">💻</div>
-                        <h4>كمبيوتر</h4>
+                        <h3>كمبيوتر</h3>
                         <p>واجهة محسّنة لأجهزة الكمبيوتر</p>
                     </div>
-                    <div class="device-option" data-device="auto">
+                    
+                    <div class="device-option bounce-in" data-device="auto" style="animation-delay: 0.8s">
                         <div class="device-icon">🔄</div>
-                        <h4>تلقائي</h4>
+                        <h3>تلقائي</h3>
                         <p>اختيار تلقائي حسب الجهاز</p>
                     </div>
                 </div>
-                <button class="continue-btn" id="continue-device-btn" disabled>متابعة</button>
+                
+                <button class="continue-btn glow-btn" id="continue-device-btn" disabled>متابعة</button>
             </div>
         </div>
 
         <!-- شاشة تسجيل الدخول -->
         <div id="login-screen" class="screen">
             <div class="login-content">
-                <h1 class="game-title">Shadow City</h1>
+                <div class="login-background">
+                    <div class="neon-grid"></div>
+                </div>
+                
+                <h1 class="game-title neon-glow">Shadow City</h1>
                 <p class="game-subtitle">Simulator of Streets</p>
-                <div class="login-form">
+                
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="login-tab">تسجيل الدخول</button>
+                    <button class="auth-tab" id="register-tab">حساب جديد</button>
+                </div>
+                
+                <div class="login-form slide-up">
                     <div class="form-group">
                         <label for="username">اسم المستخدم:</label>
                         <input type="text" id="username" placeholder="أدخل اسم المستخدم" maxlength="20">
@@ -70,20 +123,18 @@
                         <label for="password">كلمة المرور:</label>
                         <input type="password" id="password" placeholder="أدخل كلمة المرور">
                     </div>
-                    <button class="login-btn" id="login-btn">تسجيل الدخول</button>
+                    <button class="login-btn pulse-btn" id="login-btn">تسجيل الدخول</button>
                     
                     <!-- خيارات تسجيل الدخول الاجتماعي -->
                     <div class="social-login">
                         <div class="divider">
                             <span>أو</span>
                         </div>
-                        <button class="google-login-btn" id="google-login-btn">
+                        <button class="google-login-btn hover-lift" id="google-login-btn">
                             <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-icon">
                             تسجيل الدخول بحساب Google
                         </button>
                     </div>
-                    
-                    <button class="register-btn" id="register-btn">إنشاء حساب جديد</button>
                 </div>
             </div>
         </div>
@@ -91,8 +142,12 @@
         <!-- شاشة إنشاء حساب -->
         <div id="register-screen" class="screen">
             <div class="register-content">
-                <h2>إنشاء حساب جديد</h2>
-                <div class="register-form">
+                <div class="register-background">
+                    <div class="matrix-rain"></div>
+                </div>
+                
+                <h2 class="register-title glow-text">إنشاء حساب جديد</h2>
+                <div class="register-form fade-in">
                     <div class="form-group">
                         <label for="new-username">اسم المستخدم:</label>
                         <input type="text" id="new-username" placeholder="اختر اسم مستخدم" maxlength="20">
@@ -109,7 +164,7 @@
                         <label for="confirm-password">تأكيد كلمة المرور:</label>
                         <input type="password" id="confirm-password" placeholder="أعد كتابة كلمة المرور">
                     </div>
-                    <button class="register-btn" id="register-submit-btn">إنشاء الحساب</button>
+                    <button class="register-btn glow-btn" id="register-submit-btn">إنشاء الحساب</button>
                     <button class="back-btn" id="back-to-login-btn">العودة لتسجيل الدخول</button>
                 </div>
             </div>

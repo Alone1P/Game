@@ -702,15 +702,73 @@ function sendRegistrationConfirmation(email, username) {
 }
 
 function initGame() {
-    // محاكاة التحميل
+    // إعداد الشاشة السوداء في البداية
+    document.body.style.backgroundColor = '#000';
+    
+    // محاكاة التحميل مع شريط التقدم
     let progress = 0;
+    const progressFill = document.getElementById('progress-fill');
+    const progressPercentage = document.getElementById('progress-percentage');
+    const loadingText = document.getElementById('loading-text');
+    
+    const loadingSteps = [
+        { text: 'تحميل الموارد...', duration: 800 },
+        { text: 'إعداد البيئة...', duration: 600 },
+        { text: 'تحميل البيانات...', duration: 700 },
+        { text: 'تهيئة النظام...', duration: 500 },
+        { text: 'جاري الانتهاء...', duration: 400 }
+    ];
+    
+    let currentStep = 0;
+    
     const loadingInterval = setInterval(() => {
-        progress += Math.random() * 15;
+        progress += Math.random() * 15 + 5; // زيادة عشوائية بين 5-20
+        
+        if (progress > 100) progress = 100;
+        
+        // تحديث شريط التقدم
+        progressFill.style.width = progress + '%';
+        progressPercentage.textContent = Math.floor(progress) + '%';
+        
+        // تحديث نص التحميل
+        if (currentStep < loadingSteps.length && progress > (currentStep + 1) * 20) {
+            loadingText.textContent = loadingSteps[currentStep].text;
+            currentStep++;
+        }
+        
+        // إنهاء التحميل
         if (progress >= 100) {
-            progress = 100;
             clearInterval(loadingInterval);
+            loadingText.textContent = 'مكتمل!';
+            
+            // انتظار قصير ثم الانتقال لشاشة اختيار الجهاز
             setTimeout(() => {
-                // التحقق من تسجيل الدخول التلقائي
+                // تأثير الانتقال المطاطي
+                const loadingScreen = document.getElementById('loading-screen');
+                loadingScreen.style.transform = 'scale(0.8)';
+                loadingScreen.style.opacity = '0';
+                
+                setTimeout(() => {
+                    showScreen('device-selection');
+                    setupDeviceSelection();
+                    
+                    // تأثير ظهور شاشة اختيار الجهاز
+                    const deviceScreen = document.getElementById('device-selection');
+                    deviceScreen.style.transform = 'scale(1.1)';
+                    deviceScreen.style.opacity = '0';
+                    
+                    setTimeout(() => {
+                        deviceScreen.style.transition = 'all 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+                        deviceScreen.style.transform = 'scale(1)';
+                        deviceScreen.style.opacity = '1';
+                    }, 50);
+                }, 500);
+            }, 1000);
+        }
+    }, 100);
+}
+
+// التحقق من تسجيل الدخول التلقائي
                 if (userManager.autoLogin()) {
                     const gameData = userManager.loadGameData();
                     if (gameData) {
@@ -802,33 +860,52 @@ function setupLogin() {
     const backToLoginBtn = document.getElementById('back-to-login-btn');
     const registerSubmitBtn = document.getElementById('register-submit-btn');
     const googleLoginBtn = document.getElementById('google-login-btn');
+    const loginTab = document.getElementById('login-tab');
+    const registerTab = document.getElementById('register-tab');
+    
+    // تبديل التبويبات
+    if (loginTab && registerTab) {
+        loginTab.addEventListener('click', function() {
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+            showScreen('login-screen');
+        });
+        
+        registerTab.addEventListener('click', function() {
+            registerTab.classList.add('active');
+            loginTab.classList.remove('active');
+            showScreen('register-screen');
+        });
+    }
     
     // تسجيل الدخول العادي
-    loginBtn.addEventListener('click', function() {
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
-        
-        if (!username || !password) {
-            showNotification('يرجى ملء جميع الحقول!');
-            return;
-        }
-        
-        const result = userManager.login(username, password);
-        if (result.success) {
-            const gameData = userManager.loadGameData();
-            if (gameData) {
-                Object.assign(gameState, gameData);
-                showScreen('main-menu');
-                updateMenuPlayerInfo();
-            } else {
-                showScreen('character-creation');
-                setupCharacterCreation();
+    if (loginBtn) {
+        loginBtn.addEventListener('click', function() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                showNotification('يرجى ملء جميع الحقول!');
+                return;
             }
-            showNotification(result.message);
-        } else {
-            showNotification(result.message);
-        }
-    });
+            
+            const result = userManager.login(username, password);
+            if (result.success) {
+                const gameData = userManager.loadGameData();
+                if (gameData) {
+                    Object.assign(gameState, gameData);
+                    showScreen('main-menu');
+                    updateMenuPlayerInfo();
+                } else {
+                    showScreen('character-creation');
+                    setupCharacterCreation();
+                }
+                showNotification(result.message);
+            } else {
+                showNotification(result.message);
+            }
+        });
+    }
     
     // تسجيل الدخول بـ Google
     if (googleLoginBtn) {
@@ -841,46 +918,52 @@ function setupLogin() {
         });
     }
     
-    registerBtn.addEventListener('click', function() {
-        showScreen('register-screen');
-    });
+    if (registerBtn) {
+        registerBtn.addEventListener('click', function() {
+            showScreen('register-screen');
+        });
+    }
     
-    backToLoginBtn.addEventListener('click', function() {
-        showScreen('login-screen');
-    });
-    
-    registerSubmitBtn.addEventListener('click', function() {
-        const username = document.getElementById('new-username').value.trim();
-        const email = document.getElementById('new-email').value.trim();
-        const password = document.getElementById('new-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
-        
-        if (!username || !email || !password || !confirmPassword) {
-            showNotification('يرجى ملء جميع الحقول!');
-            return;
-        }
-        
-        // التحقق من صحة البريد الإلكتروني
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            showNotification('يرجى إدخال بريد إلكتروني صحيح!');
-            return;
-        }
-        
-        if (password !== confirmPassword) {
-            showNotification('كلمات المرور غير متطابقة!');
-            return;
-        }
-        
-        const result = userManager.register(username, password, email);
-        if (result.success) {
-            sendRegistrationConfirmation(email, username);
-            showNotification(result.message);
+    if (backToLoginBtn) {
+        backToLoginBtn.addEventListener('click', function() {
             showScreen('login-screen');
-        } else {
-            showNotification(result.message);
-        }
-    });
+        });
+    }
+    
+    if (registerSubmitBtn) {
+        registerSubmitBtn.addEventListener('click', function() {
+            const username = document.getElementById('new-username').value.trim();
+            const email = document.getElementById('new-email').value.trim();
+            const password = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (!username || !email || !password || !confirmPassword) {
+                showNotification('يرجى ملء جميع الحقول!');
+                return;
+            }
+            
+            // التحقق من صحة البريد الإلكتروني
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showNotification('يرجى إدخال بريد إلكتروني صحيح!');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showNotification('كلمات المرور غير متطابقة!');
+                return;
+            }
+            
+            const result = userManager.register(username, password, email);
+            if (result.success) {
+                sendRegistrationConfirmation(email, username);
+                showNotification(result.message);
+                showScreen('login-screen');
+            } else {
+                showNotification(result.message);
+            }
+        });
+    }
 }
 
 // تحديث معلومات اللاعب في القائمة الرئيسية
